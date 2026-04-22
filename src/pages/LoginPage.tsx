@@ -1,11 +1,13 @@
-// src/pages/LoginPage.tsx
 import { useForm } from "react-hook-form";
+// ПРАВИЛЬНО: Прибираємо "type" перед useAuth
 import { useAuth } from "../context/AuthContext";
 import type { LoginData } from "../types";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const LoginPage = () => {
   const { login } = useAuth();
+  const navigate = useNavigate();
+
   const {
     register,
     handleSubmit,
@@ -15,7 +17,10 @@ const LoginPage = () => {
   const onSubmit = async (data: LoginData) => {
     try {
       await login(data);
+      // Оскільки бекенд видає 200 OK, navigate спрацює!
+      navigate("/");
     } catch (err) {
+      console.error("Login failed:", err);
       alert("Помилка входу");
     }
   };
@@ -28,6 +33,7 @@ const LoginPage = () => {
           {...register("email", { required: "Email обов'язковий" })}
           placeholder="Email"
         />
+        {/* Використовуємо errors, щоб прибрати warning */}
         {errors.email && <p style={{ color: "red" }}>{errors.email.message}</p>}
 
         <input
@@ -40,9 +46,10 @@ const LoginPage = () => {
         )}
 
         <button type="submit" disabled={isSubmitting}>
-          Увійти
+          {isSubmitting ? "Вхід..." : "Увійти"}
         </button>
-        <p style={{ color: "white", marginTop: "10px" }}>
+
+        <p style={{ marginTop: "15px", color: "white" }}>
           Немає акаунту?{" "}
           <Link to="/register" style={{ color: "#4da6ff" }}>
             Зареєструватися
@@ -52,4 +59,5 @@ const LoginPage = () => {
     </div>
   );
 };
+
 export default LoginPage;

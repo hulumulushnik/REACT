@@ -1,12 +1,22 @@
 import { useForm } from "react-hook-form";
 import { useAuth } from "../context/AuthContext";
 import type { RegisterData } from "../types";
+import { useNavigate } from "react-router-dom";
 
 const RegisterPage = () => {
+  const { register: registerInContext } = useAuth(); // Отримуємо функцію
+  const navigate = useNavigate();
   const { register, handleSubmit } = useForm<RegisterData>();
-  useAuth(); // Припустимо, ти додав це в контекст
 
-  const onSubmit = (data: RegisterData) => console.log(data);
+  const onSubmit = async (data: RegisterData) => {
+    try {
+      await registerInContext(data); // Викликаємо функцію з useAuth()
+      alert("Реєстрація успішна!");
+      navigate("/dashboard");
+    } catch (err) {
+      alert("Помилка реєстрації. Перевірте дані.");
+    }
+  };
 
   return (
     <div className="page">

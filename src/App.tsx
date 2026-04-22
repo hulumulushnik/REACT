@@ -1,8 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
+import Sidebar from "./pages/Sidebar"; // 1. Не забудь створити цей файл!
 
-// Імпорт сторінок (їх потрібно створити в папці pages)
-// Якщо сторінок ще немає, можна тимчасово замінити на <div>Назва сторінки</div>
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import Dashboard from "./pages/Dashboard";
@@ -11,9 +10,9 @@ import CourseDetails from "./pages/CourseDetails";
 import StudentsPage from "./pages/StudentsPage";
 import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
+import CreateCoursePage from "./pages/CreateCoursePage";
 import type { JSX } from "react";
 
-// 1. Компонент для захисту роутів (Protected Route)
 const ProtectedRoute = ({
   children,
   allowedRoles,
@@ -37,74 +36,90 @@ const ProtectedRoute = ({
 };
 
 function App() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Поки вантажиться стан авторизації — нічого не показуємо
+  if (isLoading) return <div>Завантаження...</div>;
+
   return (
-    <div className="app-container">
-      <Routes>
-        {/* --- ПУБЛІЧНІ РОУТИ --- */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+    <div className={isAuthenticated ? "app-layout" : "auth-layout"}>
+      {/* 2. Показуємо Sidebar тільки якщо користувач залогінений */}
+      {isAuthenticated && <Sidebar />}
 
-        {/* --- ЗАХИЩЕНІ РОУТИ (Для всіх авторизованих) --- */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
+      <div className="main-content">
+        <Routes>
+          {/* Публічні роути */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
 
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          }
-        />
+          {/* Захищені роути */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/courses"
-          element={
-            <ProtectedRoute>
-              <CoursesPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/courses/:id"
-          element={
-            <ProtectedRoute>
-              <CourseDetails />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/courses"
+            element={
+              <ProtectedRoute>
+                <CoursesPage />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* --- РОУТИ ДЛЯ TEACHER ТА ADMIN --- */}
-        <Route
-          path="/students"
-          element={
-            <ProtectedRoute allowedRoles={["teacher", "admin"]}>
-              <StudentsPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/courses/:id"
+            element={
+              <ProtectedRoute>
+                <CourseDetails />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* --- РОУТИ ТІЛЬКИ ДЛЯ ADMIN --- */}
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute allowedRoles={["admin"]}>
-              <AdminPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/students"
+            element={
+              <ProtectedRoute allowedRoles={["teacher", "admin"]}>
+                <StudentsPage />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Редирект за замовчуванням */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="*" element={<div>404 - Сторінку не знайдено</div>} />
-      </Routes>
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/courses/create"
+            element={
+              <ProtectedRoute allowedRoles={["teacher", "admin"]}>
+                <CreateCoursePage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Редиректи */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<div>404 - Сторінку не знайдено</div>} />
+        </Routes>
+      </div>
     </div>
   );
 }

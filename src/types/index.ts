@@ -24,10 +24,9 @@ export interface RegisterData extends LoginData {
 
 // Курс (CRUD модуль 2.2)
 export interface Course {
-  id: string;
+  id: number; // MySQL AI — це число
   title: string;
   description: string;
-  teacherId: string; // ID викладача, який створив курс
-  studentIds: string[]; // Список ID студентів, записаних на курс
+  teacher_id: number; // Збігається з колонкою в БД
   createdAt: string;
 }

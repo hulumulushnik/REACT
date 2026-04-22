@@ -1,73 +1,98 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import type { User, LoginData, RegisterData } from "../types";
+import {
+  useState,
+  useEffect,
+  createContext,
+  useContext,
+  type ReactNode,
+} from "react";
+import { authService } from "../api/authService";
+import type { User, LoginData, RegisterData } from "../types/index";
 
 interface AuthContextType {
   user: User | null;
-  isAuthenticated: boolean;
   login: (data: LoginData) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
+  isAuthenticated: boolean;
   isLoading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined,
+);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Авто-логін при перезавантаженні (Пункт 1.1)
-  useEffect(() => {
-    const savedToken = localStorage.getItem("token");
-    const savedUser = localStorage.getItem("user");
+  const isAuthenticated = !!user;
 
-    if (savedToken && savedUser) {
-      // В реальному проекті тут має бути запит до API для перевірки токена
-      setUser(JSON.parse(savedUser));
-    }
-    setIsLoading(false);
-  }, []);
-
+  // Вхід у систему
   const login = async (data: LoginData) => {
-    // Імітація запиту до API
-    console.log("Logging in with:", data);
-    const mockUser: User = {
-      id: "1",
-      email: data.email,
-      name: "John Doe",
-      role: "admin", // Для тесту можна міняти роль тут
-    };
-
-    localStorage.setItem("token", "fake-jwt-token");
-    localStorage.setItem("user", JSON.stringify(mockUser));
-    setUser(mockUser);
+    try {
+      const response = await authService.login(data);
+      if (response.token) {
+        localStorage.setItem("token", response.token);
+        setUser(response.user);
+      }
+    } catch (err) {
+      throw err; // Прокидуємо помилку далі для обробки в компоненті (LoginPage)
+    }
   };
 
+  // Реєстрація користувача
   const register = async (data: RegisterData) => {
-    console.log("Registering:", data);
-    // Логіка реєстрації...
+    try {
+      await authService.register(data);
+      // Оскільки ваш бекенд не повертає токен при реєстрації,
+      // ми просто завершуємо функцію.
+      // Після цього в RegisterPage.tsx можна викликати login() або navigate("/login")
+    } catch (err) {
+      throw err;
+    }
   };
 
+  // Вихід із системи
   const logout = () => {
     localStorage.removeItem("token");
-    localStorage.removeItem("user");
     setUser(null);
   };
+
+  // Автоматична перевірка токена при завантаженні сторінки
+  useEffect(() => {
+    const initAuth = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const userData = await authService.getProfile();
+        setUser(userData);
+      } catch (err) {
+        console.error("Сесія застаріла або невірна");
+        localStorage.removeItem("token");
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    initAuth();
+  }, []);
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user,
+        isLoading,
         login,
         register,
         logout,
-        isLoading,
+        isAuthenticated,
       }}
     >
-      {!isLoading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
